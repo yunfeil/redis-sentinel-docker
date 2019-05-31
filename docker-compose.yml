@@ -1,0 +1,74 @@
+version: '3'
+
+networks:
+  redis-network:
+    driver: bridge
+
+services:
+  redis-1:
+    image: 'redis'
+    networks:
+      - redis-network
+    hostname: redis-1
+    container_name: redis-1
+    ports:
+          - "6379:6379"
+    command: redis-server --appendonly yes
+
+  redis-2:
+    image: 'redis'
+    networks:
+      - redis-network
+    hostname: redis-2
+    depends_on:
+      - redis-1
+    container_name: redis-2
+    ports:
+          - "6378:6379"
+    command: redis-server --appendonly yes  --slaveof redis-1 6379
+
+  redis-sentinel-1:
+    image: 'redis'
+    networks:
+      - redis-network
+    ports:
+      - "16379:26379"
+    depends_on:
+      - redis-1
+      - redis-2
+    hostname: redis-sentinel-1
+    container_name: redis-sentinel-1
+    volumes:
+      - ./sentinel-1.conf:/data/sentinel.conf  
+    command: redis-server /data/sentinel.conf --sentinel
+
+  redis-sentinel-2:
+    image: 'redis'
+    networks:
+      - redis-network
+    ports:
+      - "26379:26379"
+    depends_on:
+      - redis-1
+      - redis-2
+    hostname: redis-sentinel-2
+    container_name: redis-sentinel-2
+    volumes:
+      - ./sentinel-2.conf:/data/sentinel.conf  
+    command: redis-server /data/sentinel.conf --sentinel
+
+  redis-sentinel-3:
+    image: 'redis'
+    networks:
+      - redis-network
+    depends_on:
+      - redis-1
+      - redis-2
+    ports:
+      - "36379:26379"
+    hostname: redis-sentinel-3
+    container_name: redis-sentinel-3
+    volumes:
+      - ./sentinel-3.conf:/data/sentinel.conf  
+    command: redis-server /data/sentinel.conf --sentinel
+
